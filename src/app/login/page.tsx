@@ -4,34 +4,54 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import { FaFacebook } from 'react-icons/fa';
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState('');
+  const router = useRouter();
+  const { status } = useSession();
 
-  const handleGoogleLogin = () => {
-    setIsLoading(true);
-    setLoadingProvider('google');
-    // This would connect to your authentication logic
-    console.log('Google login clicked');
-    // Simulating a delay for demonstration
-    setTimeout(() => {
-      setIsLoading(false);
-      setLoadingProvider('');
-    }, 1000);
-  };
+    // ถ้าผู้ใช้ล็อกอินแล้ว ให้ redirect ไปหน้าหลัก
+    useEffect(() => {
+      if (status === "authenticated") {
+        router.push("/blog");
+      }
+    }, [status, router]);
 
-  const handleFacebookLogin = () => {
-    setIsLoading(true);
-    setLoadingProvider('facebook');
-    // This would connect to your authentication logic
-    console.log('Facebook login clicked');
-    // Simulating a delay for demonstration
-    setTimeout(() => {
-      setIsLoading(false);
-      setLoadingProvider('');
-    }, 1000);
-  };
+
+    const handleGoogleLogin = async () => {
+      setIsLoading(true);
+      setLoadingProvider('google');
+      
+      try {
+        // เรียกใช้ NextAuth signIn ด้วย Google provider
+        await signIn("google", { callbackUrl: "/blog" });
+      } catch (error) {
+        console.error("Google login error:", error);
+        setIsLoading(false);
+        setLoadingProvider('');
+      }
+    };
+  
+
+  
+
+    const handleFacebookLogin = async () => {
+      setIsLoading(true);
+      setLoadingProvider('facebook');
+      
+      try {
+        // เรียกใช้ NextAuth signIn ด้วย Facebook provider
+        await signIn("facebook", { callbackUrl: "/blog" });
+      } catch (error) {
+        console.error("Facebook login error:", error);
+        setIsLoading(false);
+        setLoadingProvider('');
+      }
+    };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-6 sm:py-8 md:py-12 px-4 sm:px-6 lg:px-8">

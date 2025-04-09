@@ -4,13 +4,13 @@ import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import BloggyLogo from '../images/Bloggy.png'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import { useSession, signOut } from 'next-auth/react'
+import Image from 'next/image'
 
 // เริ่มต้นด้วยค่าเริ่มต้น แต่จะถูกอัพเดตตาม URL ที่ใช้งานอยู่
 const defaultNavigation = [
     { name: 'Home', href: '/', current: false },
     { name: 'Bloggy', href: '/blog', current: false },
-    
-    { name: 'Login', href: '/login', current: false },
 ]
 
 function classNames(...classes: string[]) {
@@ -20,16 +20,27 @@ function classNames(...classes: string[]) {
 export default function Navbar() {
     const router = useRouter()
     const pathname = usePathname() // ใช้ usePathname แทน router.pathname
+    const { data: session, status } = useSession() // เพิ่ม session จาก NextAuth
     const [navigation, setNavigation] = useState(defaultNavigation)
     
-    // อัพเดตสถานะ current ตาม URL ปัจจุบัน
+    // อัพเดตสถานะ current ตาม URL ปัจจุบัน และเพิ่ม/ลบปุ่ม Login ตามสถานะล็อกอิน
     useEffect(() => {
-        const updatedNavigation = defaultNavigation.map(item => ({
+        // สร้าง navigation ที่มีปุ่มพื้นฐาน (Home, Bloggy)
+        let navItems = [...defaultNavigation];
+        
+        // เพิ่มปุ่ม Login เฉพาะเมื่อยังไม่ได้ล็อกอิน
+        if (status !== 'authenticated') {
+            navItems.push({ name: 'Login', href: '/login', current: false });
+        }
+        
+        // อัพเดตสถานะ current ตาม URL ปัจจุบัน
+        const updatedNavigation = navItems.map(item => ({
             ...item,
-            current: item.href === pathname, // ใช้ pathname แทน router.pathname
+            current: item.href === pathname,
         }))
+        
         setNavigation(updatedNavigation)
-    }, [pathname]) // ใช้ pathname ในการติดตามการเปลี่ยนแปลง
+    }, [pathname, status]) // ติดตามทั้ง pathname และสถานะการล็อกอิน
     
     // จัดการการคลิกที่ปุ่ม
     const handleNavClick = (href: string, index: number) => {
@@ -45,6 +56,11 @@ export default function Navbar() {
         if (href !== '#') {
             router.push(href)
         }
+    }
+    
+    // จัดการการออกจากระบบ
+    const handleSignOut = async () => {
+        await signOut({ callbackUrl: '/' });
     }
 
     return (
@@ -91,44 +107,54 @@ export default function Navbar() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                                {/* Profile dropdown */}
-                                <Menu as="div" className="relative ml-3">
-                                    <div>
-                                        <MenuButton className="relative flex rounded-full bg-gray-800 text-sm focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-hidden">
-                                            <span className="absolute -inset-1.5" />
-                                            <span className="sr-only">Open user menu</span>
-                                            <img
-                                                alt=""
-                                                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                                                className="size-8 rounded-full"
-                                            />
-                                        </MenuButton>
-                                    </div>
-                                    <MenuItems
-                                        transition
-                                        className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 ring-1 shadow-lg ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-                                    >
-                                        <MenuItem>
-                                            <a
-                                                href="/profile"
-                                                className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
-                                            >
-                                                Your Profile
-                                            </a>
-                                        </MenuItem>
-                                       
-                                        <MenuItem>
-                                            <a
-                                                href="/"
-                                                className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
-                                            >
-                                                Sign out
-                                            </a>
-                                        </MenuItem>
-                                    </MenuItems>
-                                </Menu>
-                            </div>
+                            
+                            {/* แสดง Profile dropdown เฉพาะเมื่อล็อกอินแล้ว */}
+                            {status === 'authenticated' && session?.user && (
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+                                    {/* Profile dropdown */}
+                                    <Menu as="div" className="relative ml-3">
+                                        <div>
+                                            <MenuButton className="relative flex rounded-full bg-gray-800 text-sm focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-hidden">
+                                                <span className="absolute -inset-1.5" />
+                                                <span className="sr-only">Open user menu</span>
+                                                {session.user.image ? (
+                                                    <img
+                                                        src={session.user.image}
+                                                        alt={session.user.name || "User profile"}
+                                                        className="size-8 rounded-full"
+                                                    />
+                                                ) : (
+                                                    <div className="size-8 rounded-full bg-gray-500 flex items-center justify-center text-white">
+                                                        {session.user.name?.charAt(0) || 'U'}
+                                                    </div>
+                                                )}
+                                            </MenuButton>
+                                        </div>
+                                        <MenuItems
+                                            transition
+                                            className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 ring-1 shadow-lg ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+                                        >
+                                            <MenuItem>
+                                                <a
+                                                    href="/profile"
+                                                    className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                                                >
+                                                    Your Profile
+                                                </a>
+                                            </MenuItem>
+                                           
+                                            <MenuItem>
+                                                <button
+                                                    onClick={handleSignOut}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                                                >
+                                                    Sign out
+                                                </button>
+                                            </MenuItem>
+                                        </MenuItems>
+                                    </Menu>
+                                </div>
+                            )}
                         </div>
                     </div>
 

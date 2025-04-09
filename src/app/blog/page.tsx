@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { PostCard } from '../components/PostCard';
 import { mockPosts } from '../data/posts'; // แก้ไขนำเข้าข้อมูลจากไฟล์ที่แชร์กัน
+import { useSession} from 'next-auth/react'
 
 export default function BlogPage() {
     // State for search and active tab
+    const { data: session} = useSession()
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all'); // 'all', 'my'
 
@@ -32,6 +34,9 @@ export default function BlogPage() {
                     <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-xs sm:max-w-lg md:max-w-2xl mx-auto">
                         Explore thoughtful articles written by our community of writers.
                     </p>
+                    <p>{session?.user.name}</p>
+                    <p>{session?.user.email}</p>
+                    
                 </div>
 
                 {/* Search and Filter Section */}
