@@ -20,7 +20,10 @@ model User {
 model Post {
   id        String   @id @default(cuid())
   title     String
+  excerpt   String?  @db.Text
   content   String   @db.Text
+  tags      String?
+  image     String?
   published Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

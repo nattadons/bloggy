@@ -4,12 +4,15 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
 
 export default function NewPostPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+ 
+  const { data: session } = useSession();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -65,36 +68,46 @@ export default function NewPostPage() {
     }
   };
 
-  // Handle form submission
+  // จัดการการส่งฟอร์ม
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     setIsSubmitting(true);
+   
+
+    // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
+    if (!session) {
+      alert('กรุณาเข้าสู่ระบบก่อนสร้างบทความ');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
-      // In a real app, you would send data to an API or server
-      // Example:
-      // const formDataToSend = new FormData();
-      // formDataToSend.append('title', formData.title);
-      // formDataToSend.append('excerpt', formData.excerpt);
-      // formDataToSend.append('content', formData.content);
-      // formDataToSend.append('tags', formData.tags);
-      // if (formData.image) {
-      //   formDataToSend.append('image', formData.image);
-      // }
-      // const response = await fetch('/api/posts', {
-      //   method: 'POST',
-      //   body: formDataToSend
-      // });
+      // สร้าง FormData เพื่อส่งไปยัง API
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('excerpt', formData.excerpt);
+      formDataToSend.append('content', formData.content);
+      formDataToSend.append('tags', formData.tags);
+      
+      // ส่งข้อมูลไปยัง API
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        body: formDataToSend
+      });
 
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // ตรวจสอบผลลัพธ์
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'ไม่สามารถสร้างบทความได้');
+      }
 
-      // On success, navigate back to the blog page
-      alert('Your blog post has been created successfully!');
+      // เมื่อสำเร็จ นำทางกลับไปยังหน้า blog
+      alert('สร้างบทความสำเร็จแล้ว!');
       router.push('/blog');
+      router.refresh();
     } catch (error) {
       console.error('Error creating post:', error);
-      alert('Error creating post. Please try again.');
+      alert('ไม่สามารถสร้างบทความได้: ' + (error as Error).message);
     } finally {
       setIsSubmitting(false);
     }

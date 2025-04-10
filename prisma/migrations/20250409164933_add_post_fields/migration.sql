@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `Post` ADD COLUMN `excerpt` TEXT NULL,
+    ADD COLUMN `image` VARCHAR(191) NULL,
+    ADD COLUMN `tags` VARCHAR(191) NULL;
