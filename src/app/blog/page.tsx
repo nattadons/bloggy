@@ -5,8 +5,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 import SearchAndFilter from './components/SearchAndFilter';
 
-// ฟังก์ชันสำหรับดึงข้อมูลโพสต์ทั้งหมด
-async function getPosts() {
+// ฟังก์ชันสำหรับดึงข้อมูลโพสต์เริ่มต้น (5 โพสต์แรก)
+async function getInitialPosts() {
   try {
     const posts = await prisma.post.findMany({
       where: {
@@ -23,21 +23,22 @@ async function getPosts() {
             image: true,
           }
         }
-      }
+      },
+      take: 5 // ดึงเพียง 5 โพสต์แรก
     });
     
     return posts;
   } catch (error) {
     console.error('Error fetching posts:', error);
-    throw new Error('Failed to fetch posts');
+    return [];
   }
 }
 
 export default async function BlogPage() {
   // ดึงข้อมูล session และโพสต์พร้อมกัน
-  const [session, posts] = await Promise.all([
+  const [session, initialPosts] = await Promise.all([
     getServerSession(authOptions),
-    getPosts()
+    getInitialPosts()
   ]);
 
   return (
@@ -54,10 +55,11 @@ export default async function BlogPage() {
           )}
         </div>
 
-        {/* Client Component สำหรับการค้นหาและกรองข้อมูล */}
-        <SearchAndFilter initialPosts={posts} userId={session?.user?.id} />
-
-      
+        {/* Client Component สำหรับการค้นหา, กรองข้อมูล และ infinite scroll */}
+        <SearchAndFilter 
+          initialPosts={initialPosts} 
+          userId={session?.user?.id} 
+        />
       </main>
     </div>
   );

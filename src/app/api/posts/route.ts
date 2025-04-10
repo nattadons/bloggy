@@ -105,15 +105,36 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get query parameters for filtering
+    // Get query parameters for filtering and pagination
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '5');
+    const search = searchParams.get('search');
+    const skip = (page - 1) * limit;
+    
+    // Build the where condition
+    const where: any = {
+      published: true,
+    };
+    
+    // Add user filter if needed
+    if (userId) {
+      where.authorId = userId;
+    }
+    
+    // Add search filter if provided
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { excerpt: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     
     // Build the query
     const query: any = {
-      where: {
-        published: true,
-      },
+      where,
       orderBy: {
         createdAt: 'desc' // Most recent first
       },
@@ -125,22 +146,45 @@ export async function GET(request: NextRequest) {
             image: true,
           }
         }
-      }
+      },
+      skip,
+      take: limit
     };
     
-    // Add user filter if needed
-    if (userId) {
-      query.where.authorId = userId;
-    }
-    
-    // Fetch posts from database
+    // Fetch posts from database with pagination
     const posts = await prisma.post.findMany(query);
     
-    return NextResponse.json({ posts });
+    // Get total count for pagination info
+    const totalCount = await prisma.post.count({ where });
+    
+    // Ensure the API always returns valid pagination information
+    const validPage = Math.max(1, page);
+    const validLimit = Math.max(1, limit);
+    const totalPages = Math.max(1, Math.ceil(totalCount / validLimit));
+    
+    return NextResponse.json({ 
+      posts: Array.isArray(posts) ? posts : [],
+      pagination: {
+        total: totalCount,
+        page: validPage,
+        limit: validLimit,
+        totalPages: totalPages
+      }
+    });
   } catch (error) {
     console.error('Error fetching posts:', error);
+    // Return a safe default response on error
     return NextResponse.json(
-      { error: 'Failed to fetch posts' },
+      { 
+        posts: [],
+        pagination: {
+          total: 0,
+          page: 1,
+          limit: 5,
+          totalPages: 1
+        },
+        error: 'Failed to fetch posts'
+      },
       { status: 500 }
     );
   }

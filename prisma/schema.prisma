@@ -15,18 +15,35 @@ model User {
   emailVerified DateTime?
   image         String?
   posts         Post[]
+  comments      Comment[] // เพิ่มความสัมพันธ์กับ Comment
 }
 
 model Post {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String
-  excerpt   String?  @db.Text
-  content   String   @db.Text
+  excerpt   String?   @db.Text
+  content   String    @db.Text
   tags      String?
   image     String?
-  published Boolean  @default(false)
+  published Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id])
+  comments  Comment[] // เพิ่มความสัมพันธ์กับ Comment
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  // ความสัมพันธ์กับ Post
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // ความสัมพันธ์กับ User (ผู้เขียนความคิดเห็น)
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
 }

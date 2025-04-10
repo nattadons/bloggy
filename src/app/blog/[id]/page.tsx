@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { formatDistance } from 'date-fns';
 import { Post } from '@/app/components/PostCard';
 import LoadingPage from '@/app/components/LoadingPage';
-
+import Comments from '@/app/blog/components/Comments';
 
 
 export default function PostDetailPage() {
@@ -225,6 +225,9 @@ export default function PostDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* comment section */}
+        <Comments postId={postId} />
 
         {/* โพสต์ที่เกี่ยวข้อง */}
         {relatedPosts.length > 0 && (
