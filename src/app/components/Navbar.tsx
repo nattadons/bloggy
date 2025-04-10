@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import Image from 'next/image'
 
+
 // เริ่มต้นด้วยค่าเริ่มต้น แต่จะถูกอัพเดตตาม URL ที่ใช้งานอยู่
 const defaultNavigation = [
     { name: 'Home', href: '/', current: false },
@@ -51,7 +52,7 @@ export default function Navbar() {
         }))
         
         setNavigation(updatedNavigation)
-        
+    
         // นำทางไปยัง URL ที่เกี่ยวข้อง
         if (href !== '#') {
             router.push(href)
@@ -64,6 +65,8 @@ export default function Navbar() {
     }
 
     return (
+        
+       
         <Disclosure as="nav" className="bg-white border-b-2 border-gray-300 shadow-md ">
             {({ open }) => (
                 <>

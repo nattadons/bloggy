@@ -4,6 +4,9 @@ import "./globals.css";
 import Navbar from './components/Navbar';
 import Footer from "./components/Footer";
 import AuthProvider from "./context/AuthProvider";
+
+
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -32,6 +35,7 @@ export default function RootLayout({
         <AuthProvider>
           <div className="bg-gradient-to-b from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
             <Navbar></Navbar>
+            
             {children}
             <Footer></Footer>
           </div>

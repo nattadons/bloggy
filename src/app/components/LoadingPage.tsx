@@ -1,11 +1,12 @@
+"use client"
 import { useState, useEffect } from 'react';
 
 const QUOTES = [
-  "Loading amazing content, please wait a moment...",
-  "Patience is a virtue, especially when loading this page!",
-  "Take a deep breath, the page is almost ready...",
-  "While you wait, did you know that tsunamis can travel up to 500 mph?",
-  "Fetching bits and bytes from cyberspace, back in a flash!",
+  "Bringing you inspiring stories... just a moment! ✨",
+  "Your next favorite post is loading... ✨",
+  "Words are coming together — almost there! ✨",
+  "Good thoughts take time... thanks for waiting ✍️",
+  "Loading ideas worth sharing... hang tight! 📚",
 ];
 
 export default function LoadingPage() {
@@ -17,7 +18,7 @@ export default function LoadingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-600 text-white">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-600 text-white">
       <div className="relative">
         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-white/30 to-white/10 flex items-center justify-center mb-4 animate-pulse">
           <div className="w-20 h-20 border-t-4 border-white rounded-full animate-spin"></div>

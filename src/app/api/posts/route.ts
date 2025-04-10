@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
-
+import { cloudinary } from '@/lib/cloudinary';
 /**
  * API handler for creating new blog posts
  * POST /api/posts
@@ -14,27 +14,65 @@ export async function POST(request: NextRequest) {
     
     if (!session || !session.user?.id) {
       return NextResponse.json(
-        { error: 'กรุณาเข้าสู่ระบบก่อนสร้างบทความ' },
+        { error: 'Please login before creating post' },
         { status: 401 }
       );
     }
 
     // รับข้อมูลจาก form
     const formData = await request.formData();
-    console.log('Form data:', formData); // Debugging line
     
     // ดึงข้อมูลจาก form
     const title = formData.get('title') as string;
     const excerpt = formData.get('excerpt') as string;
     const content = formData.get('content') as string;
     const tags = formData.get('tags') as string;
+    const imageFile = formData.get('image') as File | null;
     
     // ตรวจสอบความถูกต้องของข้อมูล
     if (!title || !content) {
       return NextResponse.json(
-        { error: 'กรุณากรอกหัวข้อและเนื้อหาบทความ' },
+        { error: "Please enter the article title and content." },
         { status: 400 }
       );
+    }
+
+    // ตัวแปรสำหรับเก็บ URL ของรูปภาพ
+    let imageUrl: string | null = null;
+    
+    // จัดการกับการอัปโหลดรูปภาพ (ถ้ามี)
+    if (imageFile) {
+      try {
+        // แปลงไฟล์เป็น buffer และอัปโหลดไปยัง Cloudinary
+        const buffer = await imageFile.arrayBuffer();
+        const base64Image = Buffer.from(buffer).toString('base64');
+        const dataURI = `data:${imageFile.type};base64,${base64Image}`;
+        
+        const uploadResult = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload(
+            dataURI,
+            {
+              folder: 'blog_posts', // โฟลเดอร์ใน Cloudinary
+              resource_type: 'image',
+              transformation: [
+                { width: 1200, height: 630, crop: 'fill' }, // ปรับขนาดรูปภาพให้เหมาะกับหน้าปก
+                { quality: 'auto:good' } // ปรับคุณภาพอัตโนมัติ
+              ]
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+        });
+        
+        // เก็บ URL ของรูปภาพ
+        imageUrl = (uploadResult as any).secure_url;
+        console.log('Image uploaded successfully:', imageUrl);
+      } catch (uploadError) {
+        console.error('Error uploading image:', uploadError);
+        // ไม่ได้คืนค่าข้อผิดพลาดทันที เพื่อให้สามารถสร้างโพสต์ได้แม้การอัปโหลดรูปภาพล้มเหลว
+      }
     }
 
     // บันทึกข้อมูลลงฐานข้อมูล
@@ -44,6 +82,7 @@ export async function POST(request: NextRequest) {
         excerpt,
         content,
         tags,
+        image: imageUrl, // เก็บ URL ของรูปภาพที่อัปโหลด
         authorId: session.user.id,
         published: true,
       },
@@ -54,7 +93,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating post:', error);
     return NextResponse.json(
-      { error: 'ไม่สามารถสร้างบทความได้' },
+      { error: "Failed to create the article." },
       { status: 500 }
     );
   }

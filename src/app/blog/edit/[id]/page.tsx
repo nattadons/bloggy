@@ -1,18 +1,21 @@
 "use client"
 
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 
-export default function NewPostPage() {
+export default function EditPostPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-  const { data: session } = useSession();
+  const [error, setError] = useState<string | null>(null);
+  const params = useParams();
+  const postId = params.id as string;
+  const { data: session, status } = useSession();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -21,6 +24,61 @@ export default function NewPostPage() {
     tags: '',
     image: null as File | null
   });
+
+  // Fetch post data when component mounts
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/posts/${postId}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Post not found');
+          } else {
+            throw new Error('Failed to fetch post');
+          }
+        }
+
+        const data = await response.json();
+        const post = data.post;
+
+        // Check if current user is the author
+        if (session?.user?.id !== post.authorId) {
+          throw new Error('You do not have permission to edit this post');
+        }
+
+        // Set form data
+        setFormData({
+          title: post.title,
+          excerpt: post.excerpt || '',
+          content: post.content,
+          tags: post.tags || '',
+          image: null
+        });
+
+        // Set image preview if post has an image
+        if (post.image) {
+          setImagePreview(post.image);
+        }
+
+        setError(null);
+      } catch (error) {
+        console.error('Error:', error);
+        setError((error as Error).message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Only fetch if user is authenticated
+    if (status === 'authenticated') {
+      fetchPost();
+    } else if (status === 'unauthenticated') {
+      setError('You must be logged in to edit posts');
+      setIsLoading(false);
+    }
+  }, [postId, session?.user?.id, status]);
 
   // Handle form input changes
   const handleInputChange = (e: { target: { name: any; value: any; }; }) => {
@@ -32,14 +90,13 @@ export default function NewPostPage() {
   };
 
   // Handle image upload
-  // เพิ่มการตรวจสอบขนาดไฟล์ใน handleImageChange
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
 
-      // ตรวจสอบขนาดไฟล์ (5MB = 5 * 1024 * 1024 bytes)
+      // Check file size (5MB = 5 * 1024 * 1024 bytes)
       if (file.size > 5 * 1024 * 1024) {
-        alert('ไฟล์มีขนาดใหญ่เกินไป กรุณาอัปโหลดไฟล์ที่มีขนาดไม่เกิน 5MB');
+        alert('File is too large. Please upload a file smaller than 5MB');
         return;
       }
 
@@ -48,7 +105,7 @@ export default function NewPostPage() {
         image: file
       }));
 
-      // สร้าง preview
+      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -76,65 +133,84 @@ export default function NewPostPage() {
     }
   };
 
-  // จัดการการส่งฟอร์ม
-  // ปรับปรุง handleSubmit เพื่อส่งรูปภาพไปยัง API
+  // Handle form submission
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
-    if (!session) {
-      alert('กรุณาเข้าสู่ระบบก่อนสร้างบทความ');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      // สร้าง FormData เพื่อส่งไปยัง API
+      // Create FormData to send to API
       const formDataToSend = new FormData();
       formDataToSend.append('title', formData.title);
       formDataToSend.append('excerpt', formData.excerpt);
       formDataToSend.append('content', formData.content);
       formDataToSend.append('tags', formData.tags);
 
-      // เพิ่มรูปภาพเข้าไปใน FormData ถ้ามี
+      // Add image to FormData if exists
       if (formData.image) {
         formDataToSend.append('image', formData.image);
       }
 
-      // ส่งข้อมูลไปยัง API
-      const response = await fetch('/api/posts', {
-        method: 'POST',
+      // Send data to API
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: 'PATCH',
         body: formDataToSend
       });
 
-      // ตรวจสอบผลลัพธ์
+      // Check response
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'ไม่สามารถสร้างบทความได้');
+        throw new Error(errorData.error || 'Could not update post');
       }
 
-      // เมื่อสำเร็จ นำทางกลับไปยังหน้า blog
-      alert('สร้างบทความสำเร็จแล้ว!');
+      // On success, navigate back to blog page
+      alert('Post updated successfully!');
       router.push('/blog');
       router.refresh();
     } catch (error) {
-      console.error('Error creating post:', error);
-      alert('ไม่สามารถสร้างบทความได้: ' + (error as Error).message);
+      console.error('Error updating post:', error);
+      alert('Could not update post: ' + (error as Error).message);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen py-6 sm:py-8 md:py-12 px-3 sm:px-4 md:px-6">
+        <main className="max-w-3xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+            <h2 className="text-lg font-medium text-red-800 mb-2">Error</h2>
+            <p className="text-red-700">{error}</p>
+            <Link href="/blog" className="mt-4 inline-block text-blue-600 hover:underline">
+              Return to blog
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen py-6 sm:py-8 md:py-12 px-3 sm:px-4 md:px-6">
       <main className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8 md:mb-10">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Create New Blog Post
+            Edit Post
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-            Share your thoughts and stories with your readers
+            Update your post content and details
           </p>
         </div>
 
@@ -152,7 +228,7 @@ export default function NewPostPage() {
               required
               value={formData.title}
               onChange={handleInputChange}
-              placeholder="Enter an engaging title"
+              placeholder="Enter an interesting title"
               className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -222,7 +298,7 @@ export default function NewPostPage() {
               )}
 
               <p className="text-xs text-gray-500">
-                Recommended: 1200×630 pixels, JPG or PNG format.
+                Recommended: 1200×630 pixels, JPG or PNG format
               </p>
             </div>
           </div>
@@ -239,7 +315,7 @@ export default function NewPostPage() {
               value={formData.content}
               onChange={handleInputChange}
               rows={12}
-              placeholder="Write your blog post content here..."
+              placeholder="Write your post content here..."
               className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -255,7 +331,7 @@ export default function NewPostPage() {
               type="text"
               value={formData.tags}
               onChange={handleInputChange}
-              placeholder="e.g., technology, education, lifestyle"
+              placeholder="e.g. Technology, Education, Lifestyle"
               className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -285,7 +361,7 @@ export default function NewPostPage() {
                   Saving...
                 </span>
               ) : (
-                'Publish Post'
+                'Save Changes'
               )}
             </button>
           </div>

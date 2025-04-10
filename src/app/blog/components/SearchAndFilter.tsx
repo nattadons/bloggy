@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { PostCard } from '@/app/components/PostCard';
 
+
 // Define Post type
 type Author = {
   id: string;
