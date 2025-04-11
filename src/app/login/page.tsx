@@ -45,7 +45,7 @@ export default function LoginPage() {
       
       try {
         // เรียกใช้ NextAuth signIn ด้วย Facebook provider
-        await signIn("facebook", { callbackUrl: "/blog" });
+        await signIn("facebook", { callbackUrl: "/blog", redirect: true });
       } catch (error) {
         console.error("Facebook login error:", error);
         setIsLoading(false);

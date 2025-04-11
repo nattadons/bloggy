@@ -125,6 +125,8 @@ export default function Navbar() {
                                                         src={session.user.image}
                                                         alt={session.user.name || "User profile"}
                                                         className="size-8 rounded-full"
+                                                        referrerPolicy="no-referrer"
+
                                                     />
                                                 ) : (
                                                     <div className="size-8 rounded-full bg-gray-500 flex items-center justify-center text-white">
