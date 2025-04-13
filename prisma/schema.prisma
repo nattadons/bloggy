@@ -16,6 +16,7 @@ model User {
   image         String?
   posts         Post[]
   comments      Comment[] // เพิ่มความสัมพันธ์กับ Comment
+  savedPosts    Post[]    @relation("UserSavedPosts")
 }
 
 model Post {
@@ -31,6 +32,7 @@ model Post {
   authorId  String
   author    User      @relation(fields: [authorId], references: [id])
   comments  Comment[] // เพิ่มความสัมพันธ์กับ Comment
+  savedByUsers User[] @relation("UserSavedPosts")
 }
 
 model Comment {

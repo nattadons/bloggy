@@ -8,8 +8,9 @@ import Image from 'next/image';
 import { formatDistance } from 'date-fns';
 import { Post } from '@/app/components/PostCard';
 import LoadingPage from '@/app/components/LoadingPage';
-import Comments from '@/app/blog/components/Comments';
-import ShareButtons from '@/app/blog/components/ShareButtons';
+import Comments from '@/app/components/blog/Comments';
+import ShareButtons from '@/app/components/blog/ShareButtons';
+import FavoriteButton from '@/app/components/blog/FavoriteButton';
 
 
 export default function PostDetailPage() {
@@ -23,7 +24,7 @@ export default function PostDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [postUrl, setPostUrl] = useState('');
 
- 
+
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -57,12 +58,12 @@ export default function PostDetailPage() {
     }
   }, [postId, router]);
 
-    // Set the post URL for sharing
-    useEffect(() => {
-      if (typeof window !== 'undefined') {
-        setPostUrl(window.location.href);
-      }
-    }, []);
+  // Set the post URL for sharing
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPostUrl(window.location.href);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -206,24 +207,27 @@ export default function PostDetailPage() {
             ))}
           </div>
 
-          {/* ปุ่มแชร์ไปยัง Facebook Messenger */}
-          <div>
-          
+            {/* Favorite button */}
+            <div className='flex justify-end mt-4'>
 
-          </div>
+            <FavoriteButton postId={postId} />
+            </div>
+       
         </article>
 
 
-           {/* Share Buttons - Add this section */}
-           {postUrl && (
+        {/* Share Buttons - Add this section */}
+        {postUrl && (
           <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-            <ShareButtons 
-              title={post.title} 
+            <ShareButtons
+              title={post.title}
               url={postUrl}
               excerpt={post.excerpt || ''}
             />
           </div>
         )}
+
+      
 
         {/* ข้อมูลผู้เขียน */}
         <div className="mt-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">

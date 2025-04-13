@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
-import SearchAndFilter from './components/SearchAndFilter';
+import SearchAndFilter from '../components/blog/SearchAndFilter';
 
 // ฟังก์ชันสำหรับดึงข้อมูลโพสต์เริ่มต้น (5 โพสต์แรก)
 async function getInitialPosts() {

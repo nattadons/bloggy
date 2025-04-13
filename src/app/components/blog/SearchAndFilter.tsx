@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Import router for redirection
 import { PostCard } from '@/app/components/PostCard';
 
 // Define types
@@ -37,6 +38,7 @@ type SearchAndFilterProps = {
 };
 
 export default function SearchAndFilter({ initialPosts, userId }: SearchAndFilterProps) {
+  const router = useRouter(); // Initialize router for redirection
   const [posts, setPosts] = useState<Post[]>(initialPosts || []);
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
@@ -142,6 +144,16 @@ export default function SearchAndFilter({ initialPosts, userId }: SearchAndFilte
     }
   }, [pagination, loading, activeTab, userId, debouncedSearch]);
 
+  // Handle tab change with authentication check
+  const handleTabChange = (tab: string) => {
+    if (tab === 'my' && !userId) {
+      // Redirect to login page if user tries to access "My Blogs" without being logged in
+      router.push('/login?returnUrl=/blog'); // Add returnUrl for redirect back after login
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
   // Set up Intersection Observer for infinite scroll
   useEffect(() => {
     if (!loader.current || !pagination) return;
@@ -188,7 +200,7 @@ export default function SearchAndFilter({ initialPosts, userId }: SearchAndFilte
         {/* Tabs */}
         <div className="flex border-b border-gray-200">
           <button
-            onClick={() => setActiveTab('all')}
+            onClick={() => handleTabChange('all')}
             className={`py-2 px-4 font-medium text-sm focus:outline-none ${activeTab === 'all'
               ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -197,12 +209,12 @@ export default function SearchAndFilter({ initialPosts, userId }: SearchAndFilte
             All Blogs
           </button>
           <button
-            onClick={() => setActiveTab('my')}
+            onClick={() => handleTabChange('my')}
             className={`py-2 px-4 font-medium text-sm focus:outline-none ${activeTab === 'my'
               ? 'text-blue-600 border-b-2 border-blue-600'
               : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
-            disabled={!userId}
+            // No longer disabled so we can handle the click and redirect
           >
             My Blogs
           </button>
@@ -212,7 +224,7 @@ export default function SearchAndFilter({ initialPosts, userId }: SearchAndFilte
       {/* Write New Post Button */}
       <div className="flex justify-end sm:justify-end mb-4 sm:mb-6">
         <Link
-          href="/blog/new"
+          href={userId ? "/blog/new" : "/login?returnUrl=/blog/new"}
           className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm md:text-base bg-blue-600 text-white rounded-md hover:shadow-lg hover:scale-105 transition-all duration-300 ease-in-out group relative overflow-hidden"
         >
           <span className="relative z-10 flex items-center">
