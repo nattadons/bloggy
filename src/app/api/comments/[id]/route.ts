@@ -1,4 +1,4 @@
-// app/api/comments/[id]/route.ts
+// src/app/api/comments/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
@@ -7,10 +7,10 @@ import { prisma } from '@/lib/prisma';
 // แก้ไข comment
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const commentId = params.id;
+    const commentId = context.params.id;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -74,10 +74,10 @@ export async function PUT(
 // ลบ comment
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const commentId = params.id;
+    const commentId = context.params.id;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
