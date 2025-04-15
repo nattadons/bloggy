@@ -18,17 +18,15 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async signIn({ user }: { user: { email?: string | null; name?: string | null; image?: string | null } }) {
+    async signIn({ user }) {
       if (!user.email) return false;
 
       try {
-        // เช็คว่าผู้ใช้มีในฐานข้อมูลหรือไม่
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
         });
 
         if (existingUser) {
-          // ถ้ามี, อัปเดตข้อมูลผู้ใช้
           await prisma.user.update({
             where: { email: user.email },
             data: {
@@ -37,13 +35,12 @@ export const authOptions: NextAuthOptions = {
             },
           });
         } else {
-          // ถ้ายังไม่มี, สร้างผู้ใช้ใหม่
           await prisma.user.create({
             data: {
               email: user.email,
               name: user.name,
               image: user.image,
-              role: "user", // ตั้งค่าเริ่มต้นเป็น 'user' สำหรับผู้ใช้ใหม่
+              role: "user",
             },
           });
         }
@@ -54,8 +51,8 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
-    async session({ session, token }: { session: any; token: any }) {
-      // หาก session มี user.email ให้เพิ่ม id จากฐานข้อมูล
+
+    async session({ session }) {
       if (session?.user?.email) {
         try {
           const user = await prisma.user.findUnique({
@@ -64,7 +61,7 @@ export const authOptions: NextAuthOptions = {
 
           if (user) {
             session.user.id = user.id;
-            session.user.role = user.role; // เพิ่ม role เข้าไปใน session
+            session.user.role = user.role;
           }
         } catch (error) {
           console.error("Error getting user from database:", error);
@@ -72,23 +69,16 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+
     async redirect({ url, baseUrl }) {
-      // ตั้งค่า baseUrl โดยอัตโนมัติในสภาพแวดล้อม Vercel
-      baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.NEXTAUTH_URL || "http://localhost:3000";
-      
-      // ตรวจสอบว่า URL เริ่มต้นด้วย baseUrl หรือไม่
+      // ใช้ baseUrl ที่ NextAuth ส่งมาให้โดยอ้างอิงจาก NEXTAUTH_URL (ไม่ต้องเช็ค VERCEL_URL แล้ว)
       if (url.startsWith(baseUrl)) {
-        // ถ้า URL มาจากหน้า login หรือ signin ให้ redirect ไปที่หน้า blog
-        if (url.includes('/login') || url.includes('/api/auth/signin')) {
+        if (url.includes("/login") || url.includes("/api/auth/signin")) {
           return `${baseUrl}/blog`;
         }
         return url;
-      } else {
-        // ถ้า URL ไม่ได้เริ่มต้นด้วย baseUrl ให้ redirect ไปที่หน้า blog
-        return `${baseUrl}/blog`;
       }
+      return `${baseUrl}/blog`;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
