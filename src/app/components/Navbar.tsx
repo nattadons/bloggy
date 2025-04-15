@@ -61,7 +61,7 @@ export default function Navbar() {
     
     // จัดการการออกจากระบบ
     const handleSignOut = async () => {
-        await signOut({ callbackUrl: '/' });
+        await signOut({ callbackUrl: '/login' });
     }
 
     // ตรวจสอบว่าผู้ใช้เป็น admin หรือไม่

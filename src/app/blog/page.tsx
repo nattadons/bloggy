@@ -1,7 +1,7 @@
 // app/blog/page.tsx
 import Link from 'next/link';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth'; 
 import { prisma } from '@/lib/prisma';
 import SearchAndFilter from '../components/blog/SearchAndFilter';
 

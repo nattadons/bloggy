@@ -1,7 +1,7 @@
 // app/api/comments/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth'; 
 import { prisma } from '@/lib/prisma';
 
 // แก้ไข comment
