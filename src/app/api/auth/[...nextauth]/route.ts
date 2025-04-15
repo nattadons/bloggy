@@ -43,6 +43,7 @@ export const authOptions = {
               email: user.email,
               name: user.name,
               image: user.image,
+              role: "user", // ตั้งค่าเริ่มต้นเป็น 'user' สำหรับผู้ใช้ใหม่
             },
           });
         }
@@ -63,6 +64,7 @@ export const authOptions = {
 
           if (user) {
             session.user.id = user.id;
+            session.user.role = user.role; // เพิ่ม role เข้าไปใน session
           }
         } catch (error) {
           console.error("Error getting user from database:", error);

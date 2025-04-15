@@ -64,6 +64,10 @@ export default function Navbar() {
         await signOut({ callbackUrl: '/' });
     }
 
+    // ตรวจสอบว่าผู้ใช้เป็น admin หรือไม่
+    const isAdmin = session?.user?.role === 'admin';
+    console.log('isAdmin:', session?.user?.role ); // สำหรับการดีบัก
+
     return (
         
        
@@ -147,6 +151,18 @@ export default function Navbar() {
                                                     Your Profile
                                                 </a>
                                             </MenuItem>
+                                            
+                                            {/* เพิ่มตัวเลือก Admin Dashboard สำหรับผู้ใช้ที่มี role เป็น admin */}
+                                            {isAdmin && (
+                                                <MenuItem>
+                                                    <a
+                                                        href="/admin"
+                                                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                                                    >
+                                                        Admin Dashboard
+                                                    </a>
+                                                </MenuItem>
+                                            )}
                                            
                                             <MenuItem>
                                                 <button
