@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
+// เพิ่ม import นี้ด้านบนของไฟล์
+import RichTextEditor from '@/app/components/blog/rich-text-editor';
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -228,19 +230,14 @@ export default function NewPostPage() {
           </div>
 
           {/* Content */}
+          {/* Content */}
           <div>
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Content *
             </label>
-            <textarea
-              id="content"
-              name="content"
-              required
-              value={formData.content}
-              onChange={handleInputChange}
-              rows={12}
-              placeholder="Write your blog post content here..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            <RichTextEditor
+              content={formData.content}
+              onChange={(content) => setFormData(prev => ({ ...prev, content }))}
             />
           </div>
 

@@ -11,6 +11,8 @@ import LoadingPage from '@/app/components/LoadingPage';
 import Comments from '@/app/components/blog/Comments';
 import ShareButtons from '@/app/components/blog/ShareButtons';
 import FavoriteButton from '@/app/components/blog/FavoriteButton';
+// เพิ่ม import นี้ด้านบนของไฟล์
+import ContentView from '@/app/components/blog/rich-text-editor/content-view';
 
 
 export default function PostDetailPage() {
@@ -201,18 +203,15 @@ export default function PostDetailPage() {
 
 
           {/* แสดงเนื้อหาหลัก */}
-          <div>
-            {post.content.split('\n').map((paragraph, index) => (
-              paragraph.trim() ? <p key={index}>{paragraph}</p> : <br key={index} />
-            ))}
-          </div>
+          {/* แสดงเนื้อหาหลัก */}
+          <ContentView content={post.content} />
 
-            {/* Favorite button */}
-            <div className='flex justify-end mt-4'>
+          {/* Favorite button */}
+          <div className='flex justify-end mt-4'>
 
             <FavoriteButton postId={postId} />
-            </div>
-       
+          </div>
+
         </article>
 
 
@@ -227,7 +226,7 @@ export default function PostDetailPage() {
           </div>
         )}
 
-      
+
 
         {/* ข้อมูลผู้เขียน */}
         <div className="mt-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import LoadingPage from '@/app/components/LoadingPage';
+import RichTextEditor from '@/app/components/blog/rich-text-editor';
+
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -32,7 +34,7 @@ export default function EditPostPage() {
       try {
         setIsLoading(true);
         const response = await fetch(`/api/posts/${postId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Post not found');
@@ -303,22 +305,16 @@ export default function EditPostPage() {
           </div>
 
           {/* Content */}
+          {/* Content */}
           <div>
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Content *
             </label>
-            <textarea
-              id="content"
-              name="content"
-              required
-              value={formData.content}
-              onChange={handleInputChange}
-              rows={12}
-              placeholder="Write your post content here..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            <RichTextEditor
+              content={formData.content}
+              onChange={(content) => setFormData(prev => ({ ...prev, content }))}
             />
           </div>
-
           {/* Tags */}
           <div>
             <label htmlFor="tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

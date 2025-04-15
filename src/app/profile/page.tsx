@@ -8,9 +8,9 @@ import Link from 'next/link';
 import { Post } from '@/app/components/PostCard';
 import LoadingPage from '@/app/components/LoadingPage';
 import ProfileHeader from '@/app/components/profile/ProfileHeader';
-import PostCard from '@/app/components/profile/PostCard';
 import SavedPostCard from '@/app/components/profile/SavedPostCard';
 import TabNavigation from '@/app/components/profile/TabNavigation';
+import PaginatedPosts from '@/app/components/profile/PaginatedPosts';
 
 // Define user profile data type
 type UserProfile = {
@@ -35,20 +35,6 @@ const api = {
     return response.json();
   },
 
-  fetchUserPosts: async (userId: string) => {
-    const response = await fetch(`/api/posts?userId=${userId}`);
-    if (!response.ok) throw new Error('Failed to fetch user posts');
-    return response.json();
-  },
-
-  deletePost: async (postId: string) => {
-    const response = await fetch(`/api/posts/${postId}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Failed to delete post');
-    return response.json();
-  },
-
   fetchSavedPosts: async (userId: string) => {
     const response = await fetch(`/api/users/${userId}/favorites`);
     if (!response.ok) throw new Error('Failed to fetch saved posts');
@@ -67,7 +53,6 @@ const api = {
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('posts');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -80,29 +65,24 @@ export default function ProfilePage() {
     }
   }, [status, router]);
 
-  // Fetch user data
-  const fetchUserData = useCallback(async () => {
+  // Fetch user profile data
+  const fetchUserProfile = useCallback(async () => {
     if (!session?.user?.id || status !== 'authenticated') return;
 
     setIsLoading(true);
     try {
-      const [profileData, postsData] = await Promise.all([
-        api.fetchUserProfile(),
-        api.fetchUserPosts(session.user.id)
-      ]);
-
+      const profileData = await api.fetchUserProfile();
       setUserProfile(profileData);
-      setUserPosts(postsData.posts || []);
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('Error fetching user profile:', error);
     } finally {
       setIsLoading(false);
     }
   }, [session?.user?.id, status]);
 
   useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+    fetchUserProfile();
+  }, [fetchUserProfile]);
 
   // Fetch saved posts
   const fetchSavedPosts = useCallback(async () => {
@@ -142,36 +122,18 @@ export default function ProfilePage() {
     }
   }, [fetchSavedPosts, savedPosts.length]);
 
-  // Handle post actions
-  const handleEditPost = useCallback((e: React.MouseEvent, postId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    router.push(`/blog/edit/${postId}`);
-  }, [router]);
-
-  const handleDeletePost = useCallback(async (e: React.MouseEvent, postId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      try {
-        await api.deletePost(postId);
-        setUserPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
-        setUserProfile(prevProfile => {
-          if (!prevProfile) return null;
-          return {
-            ...prevProfile,
-            stats: {
-              ...prevProfile.stats,
-              posts: prevProfile.stats.posts - 1
-            }
-          };
-        });
-      } catch (error) {
-        console.error('Error deleting post:', error);
-        alert('Failed to delete the post. Please try again.');
-      }
-    }
+  // Handle post deletion (update user profile stats)
+  const handlePostDelete = useCallback((postId: string) => {
+    setUserProfile(prevProfile => {
+      if (!prevProfile) return null;
+      return {
+        ...prevProfile,
+        stats: {
+          ...prevProfile.stats,
+          posts: Math.max(0, prevProfile.stats.posts - 1)
+        }
+      };
+    });
   }, []);
 
   const handleViewPost = useCallback((postId: string) => {
@@ -254,48 +216,12 @@ export default function ProfilePage() {
         {/* Tab Content */}
         <div className="mb-8">
           {activeTab === 'posts' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-6">
-                Your Posts
-              </h2>
-
-              {userPosts.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {userPosts.map(post => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      onEdit={handleEditPost}
-                      onDelete={handleDeletePost}
-                      onView={handleViewPost}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 px-4">
-                  <div className="mx-auto max-w-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                    </svg>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">No posts yet</h3>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      Get started by creating your first blog post.
-                    </p>
-                    <div className="mt-6">
-                      <Link
-                        href="/blog/new"
-                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full shadow hover:shadow-lg transition-all duration-300"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                        </svg>
-                        Create New Post
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            session?.user?.id ? (
+              <PaginatedPosts 
+                userId={session.user.id} 
+                onDeletePost={handlePostDelete} 
+              />
+            ) : null
           )}
 
           {activeTab === 'saved' && (
@@ -309,7 +235,6 @@ export default function ProfilePage() {
                   <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
               ) : savedPosts.length > 0 ? (
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {savedPosts.map(post => (
                     <SavedPostCard
