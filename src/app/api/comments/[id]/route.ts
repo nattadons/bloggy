@@ -4,19 +4,13 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-type Context = {
-  params: {
-    id: string;
-  };
-};
-
 // แก้ไข comment
 export async function PUT(
   request: NextRequest,
-  context: Context
+  { params }: { params: { id: string } }
 ) {
   try {
-    const commentId = context.params.id;
+    const commentId = params.id;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -80,10 +74,10 @@ export async function PUT(
 // ลบ comment
 export async function DELETE(
   request: NextRequest,
-  context: Context
+  { params }: { params: { id: string } }
 ) {
   try {
-    const commentId = context.params.id;
+    const commentId = params.id;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
