@@ -34,25 +34,60 @@ export async function GET(
       );
     }
     
-    // ดึงโพสต์ที่เกี่ยวข้อง (เช่น 2 โพสต์ล่าสุดที่ไม่ใช่โพสต์นี้)
-    const relatedPosts = await prisma.post.findMany({
-      where: {
-        id: { not: postId },
-        published: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        author: {
-          select: {
-            name: true,
-            image: true,
+    // แยกแท็กจากโพสต์ปัจจุบัน
+    const currentPostTags = post.tags ? post.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : [];
+    
+    let relatedPosts: any[] = [];
+    
+    // ถ้าโพสต์มีแท็ก ค้นหาโพสต์ที่มีแท็กคล้ายกัน
+    if (currentPostTags.length > 0) {
+      relatedPosts = await prisma.post.findMany({
+        where: {
+          id: { not: postId },
+          published: true,
+          OR: currentPostTags.map(tag => ({
+            tags: { contains: tag }
+          }))
+        },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: {
+            select: {
+              name: true,
+              image: true,
+            }
           }
-        }
-      },
-      take: 2,
-    });
+        },
+        take: 2,
+      });
+    }
+    
+    // ถ้ายังไม่ได้โพสต์ที่เกี่ยวข้องเพียงพอ ให้เสริมด้วยโพสต์ล่าสุด
+    if (relatedPosts.length < 2) {
+      const existingPostIds = relatedPosts.map(post => post.id);
+      
+      const recentPosts = await prisma.post.findMany({
+        where: {
+          published: true,
+          id: {
+            not: postId,
+            notIn: existingPostIds.length > 0 ? existingPostIds : undefined,
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: {
+            select: {
+              name: true,
+              image: true,
+            }
+          }
+        },
+        take: 2 - relatedPosts.length,
+      });
+      
+      relatedPosts = [...relatedPosts, ...recentPosts];
+    }
     
     return NextResponse.json({ post, relatedPosts });
   } catch (error) {

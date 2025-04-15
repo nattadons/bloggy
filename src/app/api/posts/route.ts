@@ -123,13 +123,41 @@ export async function GET(request: NextRequest) {
       where.authorId = userId;
     }
     
-    // Add search filter if provided
+    // Add search filter if provided - MODIFIED FOR MYSQL COMPATIBILITY
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { excerpt: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
-      ];
+      try {
+        // MySQL compatible search (no mode: 'insensitive')
+        where.OR = [
+          { title: { contains: search } },
+          { excerpt: { contains: search } },
+          { content: { contains: search } },
+          { tags: { contains: search } },
+        ];
+        
+        // Alternatively, for better case-insensitive search in MySQL, you could use:
+        // where.OR = [
+        //   { title: { equals: search, mode: 'insensitive' } }, // Will error in MySQL
+        //   { excerpt: { equals: search, mode: 'insensitive' } }, // Will error in MySQL
+        //   { content: { equals: search, mode: 'insensitive' } }, // Will error in MySQL
+        // ];
+        
+      } catch (searchError) {
+        console.error('Error with search configuration:', searchError);
+        // Log the error for debugging but don't let it crash
+        console.log('Search term was:', search);
+        
+        // Return empty array to prevent app from crashing
+        return NextResponse.json({ 
+          posts: [],
+          pagination: {
+            total: 0,
+            page: 1,
+            limit: 5,
+            totalPages: 1
+          },
+          error: 'Search configuration error'
+        }, { status: 200 });
+      }
     }
     
     // Build the query
