@@ -1,4 +1,3 @@
 {
-    "buildCommand": "next build --no-lint",
-    "ignoreCommand": "yarn dlx next-ignore-typescript"
+    "buildCommand": "next build"
   }
