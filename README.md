@@ -2,6 +2,8 @@
 
 A full-stack personal blogging platform built with Next.js, TypeScript, and Tailwind CSS where users can create, manage, and share blog posts.
 
+**Live Demo**: [https://bloggy-mocha-one.vercel.app/](https://bloggy-mocha-one.vercel.app/)
+
 ## 📋 Overview
 
 Bloggy is a modern blogging platform that allows users to create and share their own blog posts after signing in. The platform provides a clean, simple blogging experience where authenticated users can write, edit, and manage their content.
