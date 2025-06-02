@@ -1,11 +1,11 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -14,17 +14,17 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("user") // เพิ่ม field role โดยค่า default คือ "user"
+  role          String    @default("user")
   posts         Post[]
-  comments      Comment[] // เพิ่มความสัมพันธ์กับ Comment
+  comments      Comment[]
   savedPosts    Post[]    @relation("UserSavedPosts")
 }
 
 model Post {
   id        String    @id @default(cuid())
   title     String
-  excerpt   String?   @db.Text
-  content   String    @db.Text
+  excerpt   String?
+  content   String
   tags      String?
   image     String?
   published Boolean   @default(false)
@@ -32,21 +32,19 @@ model Post {
   updatedAt DateTime  @updatedAt
   authorId  String
   author    User      @relation(fields: [authorId], references: [id])
-  comments  Comment[] // เพิ่มความสัมพันธ์กับ Comment
+  comments  Comment[]
   savedByUsers User[] @relation("UserSavedPosts")
 }
 
 model Comment {
   id        String   @id @default(cuid())
-  content   String   @db.Text
+  content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  // ความสัมพันธ์กับ Post
+
   postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id])
   
-  // ความสัมพันธ์กับ User (ผู้เขียนความคิดเห็น)
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
 }
